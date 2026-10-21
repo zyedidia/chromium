@@ -19,6 +19,7 @@
 #include "base/time/time.h"
 #include "base/types/fixed_array.h"
 #include "build/build_config.h"
+#include "content/browser/browservisor/core_client_linux.h"
 #include "content/common/zygote/zygote_commands_linux.h"
 #include "content/common/zygote/zygote_communication_linux.h"
 #include "content/common/zygote/zygote_handle_impl_linux.h"
@@ -165,6 +166,15 @@ ZygoteLaunchCompletionCallback ZygoteHostImpl::LaunchZygote(
     base::ScopedFD* control_fd,
     base::FileHandleMappingVector additional_remapped_fds) {
   has_zygote_ = true;
+
+  // Under the Browservisor core, the core launches the zygote and the control
+  // socket leads to the core.
+  if (browservisor::IsCoreEnabled()) {
+    const pid_t pid = browservisor::LaunchZygote(
+        *cmd_line, additional_remapped_fds, control_fd);
+    AddZygotePid(pid);
+    return base::BindOnce([](pid_t pid) { return pid; }, pid);
+  }
 
   int fds[2];
   CHECK_EQ(0, socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, fds));

@@ -9,6 +9,7 @@
 #include "base/posix/global_descriptors.h"
 #include "base/trace_event/trace_event.h"
 #include "build/build_config.h"
+#include "content/browser/browservisor/core_client_linux.h"
 #include "content/browser/child_process_launcher.h"
 #include "content/browser/child_process_launcher_helper_posix.h"
 #include "content/browser/sandbox_host_linux.h"
@@ -185,9 +186,16 @@ void ChildProcessLauncherHelper::ApplyProcessPriorityOnLauncherThread(
 }
 
 ZygoteCommunication* ChildProcessLauncherHelper::GetZygoteForLaunch() {
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote)
-             ? nullptr
-             : delegate_->GetZygote();
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote)) {
+    return nullptr;
+  }
+  ZygoteCommunication* zygote = delegate_->GetZygote();
+  // Under the Browservisor core, children without a zygote are launched by the
+  // core through its direct launcher.
+  if (!zygote && browservisor::IsCoreEnabled()) {
+    return browservisor::GetDirectLauncher();
+  }
+  return zygote;
 }
 
 base::File OpenFileToShare(const base::FilePath& path,

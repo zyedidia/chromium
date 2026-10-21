@@ -2468,6 +2468,8 @@ source_set("browser") {
         [ "file_system_access/file_path_watcher/file_path_watcher_stub.cc" ]
 
     sources += [
+      "browservisor/core_client_linux.cc",
+      "browservisor/core_client_linux.h",
       "child_process_launcher_helper_linux.cc",
       "child_thread_type_switcher_linux.cc",
       "child_thread_type_switcher_linux.h",
